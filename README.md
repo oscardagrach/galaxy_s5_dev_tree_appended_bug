@@ -16,9 +16,8 @@ During Dan's research, he discovered that the bootloader doesn't apply any sanit
 ##### Then what?
 This resulted in several checks added to ensure that the kernel, ramdisk, and device tree don't overlap LK memory or anywhere else that would be problematic, like the scratch memory where the bootloader loads the boot image from eMMC.
 
-Starting with the Galaxy S5 (I believe the S4 used ATAGS but correct me if I'm wrong...), Samsung started using device trees. 
-
 ##### What is a device tree?
+Starting with the Galaxy S5 (I believe the S4 used ATAGS but correct me if I'm wrong...), Samsung started using device trees. 
 
 It's essentially a small 'map' or data structure for the Linux kernel to determine what hardware is on-board, how it's configured, etc... During the probe phase of Linux drivers that support device trees, they search for a 'comaptible node' in the device tree, a flag saying "hey, please load this driver, we have this hardware." This was meant to help simplify bringing-up and supporting ARM (and other) devices, and move away from the awful board files we were so used to in the 3.10 kernel.
 
