@@ -19,7 +19,7 @@ This resulted in several checks added to ensure that the kernel, ramdisk, and de
 ##### What is a device tree?
 Starting with the Galaxy S5 (I believe the S4 used ATAGS but correct me if I'm wrong...), Samsung started using device trees. 
 
-It's essentially a small 'map' or data structure for the Linux kernel to determine what hardware is on-board, how it's configured, etc... During the probe phase of Linux drivers that support device trees, they search for a 'comaptible node' in the device tree, a flag saying "hey, please load this driver, we have this hardware." This was meant to help simplify bringing-up and supporting ARM (and other) devices, and move away from the awful board files we were so used to in the 3.10 kernel.
+It's essentially a small 'map' or data structure for the Linux kernel to determine what hardware is on-board, how it's configured, etc... During the probe phase of Linux drivers that support device trees, they search for a 'comaptible node' in the device tree, a flag saying "hey, please load this driver, we have this hardware." Often modern bootloaders will pass dynamic parameters to the device trees during boot, such as a reserved memory region like a framebuffer that the bootloader has already allocated. This was meant to help simplify bringing-up and supporting ARM (and other) devices, and move away from the awful board files we were so used to in the 3.10 kernel.
 
 ##### How does Samsung load their device trees?
 
