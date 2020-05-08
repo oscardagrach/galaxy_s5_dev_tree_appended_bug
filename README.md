@@ -7,7 +7,10 @@ This is a bug I exploited in the Galaxy S5 bootloader to achieve arbitrary code 
 This vulnerability affects all Galaxy S5, Galaxy S5 Active, and possibly some early builds for the Note 3 and 4. The bug has since been patched by CodeAurora and Samsung. The device I am using is the Verizon Galaxy S5 (G900V) and I am using the G900VVRS2DQD1 (Marshmallow, 6.0.1), which appears to be the last firmware affected.
 
 ### Summary:
-Rewind the clock 7 years to the glory days of XDA. The Galaxy S4 is released, and the famous exploit Loki is released by researcher Dan Rosenberg/djrbliss. This effectively allowed the booting of unsigned boot and recovery images. So how did he do it? During Dan's research, he discovered that the bootloader doesn't apply any sanity checks to the boot image headers, meaning you could pack up a kernel, ramdisk, or shellcode, and load it to any arbitrary address in non-secure world, including over the bootloader being executed in memory. Not too long after, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
+Rewind the clock 7 years to the glory days of XDA. The Galaxy S4 is released, and the famous exploit Loki is released by researcher Dan Rosenberg/djrbliss. This effectively allowed the booting of unsigned boot and recovery images. 
+
+##### So how did he do it? 
+During Dan's research, he discovered that the bootloader doesn't apply any sanity checks to the boot image header, meaning you could pack up a kernel, ramdisk, or shellcode, and load it to any arbitrary address in non-secure world, including over the bootloader being executed in memory. Not too long after, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
 
 This resulted in several checks added to ensure that the kernel, ramdisk, and device tree don't overlap LK memory or anywhere else that would be problematic, like the scratch memory where the bootloader loads the boot image from eMMC.
 
