@@ -46,6 +46,12 @@ struct fdt_header {
 };
 ```
 
+Take note of totalsize, we will be coming back later to discuss it further...
+
+'''
+uint32_t totalsize;
+'''
+
 Let's take a quick look at the Android boot image header (prior to Android 9):
 
 ```
