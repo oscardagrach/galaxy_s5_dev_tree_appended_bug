@@ -25,7 +25,7 @@ It's essentially a small 'map' or data structure for the Linux kernel to determi
 
 There's a couple different ways to load a device tree. One such method used by Samsung  and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc... 
 
-In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can choose the best match. 
+In order to accomodate all these different revisions, Samsung concatenates all these different hardware revisions' device trees into one blob so the kernel can choose the best match. 
 
 ##### Device tree header
 
