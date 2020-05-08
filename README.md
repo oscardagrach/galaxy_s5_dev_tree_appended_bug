@@ -1,7 +1,7 @@
 # s5_dev_tree_appended_bug
 ## Vulnerability in the Samsung Galaxy S5 Bootloader
 
-This is a bug I exploited in the Galaxy S5 bootloader to achieve arbitrary code execution in LK. The vulnerability is in the function dev_tree_appended, which parses a device tree blob that's appended to a zImage, as opposed to packed as a separate image in an Android boot image like stock.
+This is a bug I exploited in the Galaxy S5 bootloader to achieve arbitrary code execution in LK (Little Kernel). The vulnerability is in the function dev_tree_appended, which parses a device tree blob that's appended to a zImage, as opposed to packed as a separate image in an Android boot image like stock.
 
 ### Scope:
 This vulnerability affects all Galaxy S5, Galaxy S5 Active, and possibly some early builds for the Note 3 and 4. The bug has since been patched by CodeAurora and Samsung. The device I am using is the Verizon Galaxy S5 (G900V) and I am using the G900VVRS2DQD1 (Marshmallow, 6.0.1), which appears to be the last firmware affected.
