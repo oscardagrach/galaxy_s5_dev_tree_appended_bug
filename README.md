@@ -56,7 +56,11 @@ Very simple. We append the dtb to the end of our kernel (zImage). The bootloader
 How does the bootloader know which method to use? Easy. If you recall from earlier, the unused member of the boot image header is used for the size of the device tree blob. If the size is 0, the bootloader will attempt to load an appended DTB, if it is not zero, it will attempt the normal method.
 
 Now we know how to make the bootloader load an appended device tree, let's take a look at the beginning of the function that handles this:
+
+
 ![dev_tree_appended](/images/dev_tree_appended.png)
+
+
 
 Almost immediately, the keen eye will notice a couple issues right off the bat.
 ```
