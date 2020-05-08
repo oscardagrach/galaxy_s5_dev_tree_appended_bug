@@ -194,7 +194,7 @@ struct boot_img_hdr
 ```
 Then we'd add our malicious zImage size to 0x2C into the zImage header, which will be 0xFE800030 as calculated later.
 
-Finally, we'll add our malicious device tree header length of 0x1800000 + payload to the header with an offset of 0x4 into it. My proof of concept for the G900V will be uploaded in the coming days.
+Finally, we'll add our malicious device tree header length of 0x1800000 + payload to the header with an offset of 0x4 into it. What I did was create a fake boot image that's only 0x1800 bytes and simply appended a real boot image. From there, my shellcode will modify the partition table that LK loads into memory after reading the GPT, check if you are booting into recovery or boot, and add 0xC to the start sector of the respective partition. My shellcode overwrites the excetion vector table and hijacks the IRQ handler, and then executes boot_linux_from_mmc, which loads our boot image with the fixed partition table after restoring the original IRQ handler.
 
-#### Conclusion
-While sometimes we make look more closely at something like the Android boot image header, other opportunities for vulnerabilities can live where we don't normally expect them.
+My proof of concept for the G900V will be uploaded in the coming days.
+
