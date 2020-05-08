@@ -23,7 +23,28 @@ It's essentially a small 'map' or data structure for the Linux kernel to determi
 
 ##### How does Samsung load their device trees?
 
-There's a couple different ways to load a device tree. One such method used by Samsung  and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc... In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can choose the best match.
+There's a couple different ways to load a device tree. One such method used by Samsung  and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc... 
+
+In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can choose the best match. 
+
+##### Device tree header
+
+Each device tree has the following header:
+
+```
+struct fdt_header {
+    uint32_t magic;
+    uint32_t totalsize;
+    uint32_t off_dt_struct;
+    uint32_t off_dt_strings;
+    uint32_t off_mem_rsvmap;
+    uint32_t version;
+    uint32_t last_comp_version;
+    uint32_t boot_cpuid_phys;
+    uint32_t size_dt_strings;
+    uint32_t size_dt_struct;
+};
+```
 
 Let's take a quick look at the Android boot image header (prior to Android 9):
 
