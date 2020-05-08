@@ -3,19 +3,23 @@ Vulnerability in the Samsung Galaxy S5 Bootloader
 
 This is a bug I exploited in the Galaxy S5 bootloader to achieve arbitrary code execution in LK. The vulnerability is in the function dev_tree_appended, which parses a device tree blob that's appended to a zImage, as opposed to packed as a separate image in an Android boot image like stock.
 
-#### Scope:
+### Scope:
 This vulnerability affects all Galaxy S5, Galaxy S5 Active, and possibly some early builds for the Note 3 and 4. The bug has since been patched by CodeAurora and Samsung. The device I am using is the Verizon Galaxy S5 (G900V) and I am using the G900VVRS2DQD1 (Marshmallow, 6.0.1), which appears to be the last firmware affected.
 
-#### Summary:
+### Summary:
 Rewind the clock 7 years to the glory days of XDA. The Galaxy S4 is released, and the famous exploit Loki is released by researcher Dan Rosenberg/djrbliss. This effectively allowed the booting of unsigned boot and recovery images. So how did he do it? During Dan's research, he discovered that the bootloader doesn't apply any sanity checks to the boot image headers, meaning you could pack up a kernel, ramdisk, or shellcode, and load it to any arbitrary address in non-secure world, including over the bootloader being executed in memory. Not too long after, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
 
 This resulted in several checks added to ensure that the kernel, ramdisk, and device tree don't overlap LK memory or anywhere else that would be problematic, like the scratch memory where the bootloader loads the boot image from eMMC.
 
-Starting with the Galaxy S5 (I believe the S4 used ATAGS but correct me if I'm wrong...), Samsung started using device trees. What is a device tree?
+Starting with the Galaxy S5 (I believe the S4 used ATAGS but correct me if I'm wrong...), Samsung started using device trees. 
 
-Summarized up, it's essentially a small 'map' or data structure for the Linux kernel to determine what hardware is on-board, how it's configured, etc... During the probe phase of Linux drivers that support device trees, they search for a 'comaptible node' in the device tree, a flag saying "hey, please load this driver, we have this hardware." This was meant to help simplify bringing-up and supporting ARM (and other) devices, and move away from the awful board files we were so used to in the 3.10 kernel.
+##### What is a device tree?
 
-How does Samsung load their device trees? There's a couple different ways to load a device tree. One such method used by Samsung  and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc... In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can choose the best match.
+It's essentially a small 'map' or data structure for the Linux kernel to determine what hardware is on-board, how it's configured, etc... During the probe phase of Linux drivers that support device trees, they search for a 'comaptible node' in the device tree, a flag saying "hey, please load this driver, we have this hardware." This was meant to help simplify bringing-up and supporting ARM (and other) devices, and move away from the awful board files we were so used to in the 3.10 kernel.
+
+##### How does Samsung load their device trees?
+
+There's a couple different ways to load a device tree. One such method used by Samsung  and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc... In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can choose the best match.
 
 Let's take a quick look at the Android boot image header (prior to Android 9):
 
@@ -49,11 +53,15 @@ uint32_t tags_addr;    /* physical addr for kernel tags */
 uint32_t unused;
 ```
 
-The first member (tags_addr) is used to point where we want to load the device tree. The second member (unused) is used for the device tree blob size by Samsung. Yes, the bootloader checks that these are both sane values, and they are unsigned comparisons, so no integer overflows for us... But did you know that LK also supports another method for loading a device tree? What might this method be?
+The first member (tags_addr) is used to point where we want to load the device tree. The second member (unused) is used for the device tree blob size by Samsung. Yes, the bootloader checks that these are both sane values, and they are unsigned comparisons, so no integer overflows for us... But did you know that LK also supports **another method** for loading a device tree?
 
-Very simple. We append the dtb to the end of our kernel (zImage). The bootloader will then parse an offset of 0x2C bytes into the zImage. Since it's a bit out of scope, 0x28 into the zImage is zimage_start and 0x2C is zimage_end, so zimage_end will have the size of the entire zImage. The bootloader will then take the value read from the zimage_end offset and add it to the kernel pointer, which theoretically would be where the device tree is appended.
+##### Enter appended DTB
+We append the dtb to the end of our kernel (zImage). The bootloader will then parse an offset of 0x2C bytes into the zImage. Since it's a bit out of scope, 0x28 into the zImage is zimage_start and 0x2C is zimage_end, so zimage_end will have the size of the entire zImage. The bootloader will then take the value read from the zimage_end offset and add it to the kernel pointer, which theoretically would be where the device tree is appended.
 
-How does the bootloader know which method to use? Easy. If you recall from earlier, the unused member of the boot image header is used for the size of the device tree blob. If the size is 0, the bootloader will attempt to load an appended DTB, if it is not zero, it will attempt the normal method.
+##### How does the bootloader know which method to use? 
+Easy. If you recall from earlier, the unused member of the boot image header is used for the size of the device tree blob. If the size is 0, the bootloader will attempt to load an appended DTB, if it is not zero, it will attempt the normal method.
+
+##### A deeper look at loading appended DTBs
 
 Now we know how to make the bootloader load an appended device tree, let's take a look at the beginning of the function that handles this:
 
@@ -71,20 +79,22 @@ We see that both kernel and tags (where we load the device tree) are void, not u
 
 ```
 [...]
-void *kernel_end;
+void *kernel_end = kernel + kernel_size)
+uint32_t app_dtb_offset = 0;
 [...]
 
-kernel_end = (void *)((int)kernel + kernel_size)
 app_dtb_offset = 0;
-memcpy(&app_dtb_offset, (void *)(int)kernel + 0x2C), 4);
-dtb = (void *)((int)kernel + app_dtb_offset);
+memcpy(&app_dtb_offset, kernel + 0x2C), 4);
+dtb = kernel + app_dtb_offset;
 ```
 
 Here the function calculates the kernel_end by adding the kernel ptr to the kernel_size find from the boot image header. The zImage header offset for zimage_end I talked about earlier is known as the "app_dtb_offset" according to LK, and we can see they copy the 4-byte length to that variable. Then the dtb pointer is calculated by adding the kernel pointer to the offset.
 
 Next, we run into a couple of sanity checks. First, they verify that the dtb pointer + the size of the dtb header is not larger than the end of the kernel, meaning we can't wrap the signed integer and set the dtb pointer somewhere over the kernel. Next the device tree header is copied to a buffer. 
 
-From there, the device tree header is checked that it is sane and valid (checking the FDT magic, len != 0, etc..) and that the dtb pointer + dtb_size from the dtb header is not larger than kernel_end again, making sure we don't wrap that integer and end up pointing somewhere over the kernel. 
+From there, the device tree header is checked that it is sane and valid (checking the FDT magic, len != 0, etc..) and that the dtb pointer + dtb_size from the dtb header is not larger than kernel_end again, making sure we don't wrap that integer and end up pointing somewhere over the kernel.
+
+##### The vulnerability
 
 If the check is successful, the dtb_size is then stored from the header. Immediately after this, we can see our lovely little vulnerability...
 
@@ -110,20 +120,11 @@ We can conclude the following conditions need to be met:
 
 With that information, it's clear the only memory regions we have available for us available to load our ramdisk, kernel, and dtb, 0x0 - 0x0F800000 and 0x0FA00000 - 0x11000000.
 
-Now that we know our conditions that must be met to be reach the vulnerable memcpy in dev_tree_appended, let's talk about how we can exploit this. At this point, you are probably thinking "How in the heck do you plan on exploiting this?"
+Now that we know our conditions that must be met to be reach the vulnerable memcpy in dev_tree_appended, let's talk about how we can exploit this.
 
-Remember the zImage header and the FDT header (not the dtb_size from the boot image header, but the device tree header itself), both of which contained their respective size? Let's go back quick and take a look at the vulnerable bits of the function dev_tree_appended:
+##### Well, how do we exploit this?
 
-```
-[...]
-void *kernel_end;
-[...]
-
-kernel_end = (void *)((int)kernel + kernel_size)
-app_dtb_offset = 0;
-memcpy(&app_dtb_offset, (void *)(int)kernel + 0x2C), 4);
-dtb = (void *)((int)kernel + app_dtb_offset);
-```
+Remember the zImage header and the FDT (DTB) header, both of which contained their respective size?
 
 We can arbitrarily change both kernel_end and app_dtb_offset without any checks up until this point. Really there's only three checks we need to satisfy in order to reach that vulnerable memcpy:
 
@@ -136,17 +137,18 @@ if (fdt_check_header((const void *)&dtb_hdr != 0 ||
   (dtb + fdt_totalsize(const void *) &dtb_hdr) > kernel_end)
     break;
 dtb_size = fdt_totalsize(&dtb_hdr);
-
-memcpy(tags, dtb, dtb_size);
 ```
 
 1. dtb + dtb_header must be less than than kernel_end
 2. dtb has a valid header (FDT magic, etc...)
 3. dtb + dtb_size must be lower than kernel_end
 
-Now that we know the conditions that need to be met, how can we exploit this? We can overflow the dtb pointer via app_dtb_offset (from the zImage header) and we can control dtb_size via the dtb length from the dtb header. Remember, even though we can overflow the dtb pointer, it still expects a valid dtb header at whatever location we point it to, and it still must be less than kernel_end. I'm sure there is more than one way to exploit this, but here's what I did...
+##### How did you exploit this?
 
-First thing I realized was that I will need tags_addr as close as possible to 0x0F800000 without violating any of the sanity checks.
+Now that we know the conditions that need to be met, we can overflow the dtb pointer via app_dtb_offset (from the zImage header) and we can control dtb_size via the dtb length from the dtb header. Remember, even though we can overflow the dtb pointer, it still expects a valid dtb header at whatever location we point it to, and it still must be less than kernel_end. I'm sure there is more than one way to exploit this, but here's what I did...
+
+##### Working backwards and doing maths
+First thing I realized was that I will need tags_addr as close as possible to 0x0F800000 without violating any of the sanity checks
 
 I settled on 0x0E000000, since even a rather large boot image *shouldn't* overlap with LK area, yet it's still rather close. This will be the destination for our vulnerable memcpy in dev_tree_appended, ideally overwriting the bootloader.
 
@@ -192,4 +194,7 @@ struct boot_img_hdr
 ```
 Then we'd add our malicious zImage size to 0x2C into the zImage header, which will be 0xFE800030 as calculated later.
 
-Finally, we'll add our malicious device tree header length of 0x1800000 + payload to the header with an offset of 0x4 into it.
+Finally, we'll add our malicious device tree header length of 0x1800000 + payload to the header with an offset of 0x4 into it. My proof of concept for the G900V will be uploaded in the coming days.
+
+#### Conclusion
+While sometimes we make look more closely at something like the Android boot image header, other opportunities for vulnerabilities can live where we don't normally expect them.
