@@ -80,9 +80,7 @@ memcpy(&app_dtb_offset, (void *)(int)kernel + 0x2C), 4);
 dtb = (void *)((int)kernel + app_dtb_offset);
 ```
 
-Here the function calculates the kernel_end by adding the kernel ptr to the kernel_size find from the boot image header. The zImage header offset for zimage_end I talked about earlier is known as the "app_dtb_offset" according to LK, and we can see they copy the 4-byte length to that variable. Then the dtb pointer is calculated by adding the kernel pointer to the offset. Further along we start to see a very potent expoitation opportunity.
-
-![dev_tree_appended](/images/dev_tree_appended.png)
+Here the function calculates the kernel_end by adding the kernel ptr to the kernel_size find from the boot image header. The zImage header offset for zimage_end I talked about earlier is known as the "app_dtb_offset" according to LK, and we can see they copy the 4-byte length to that variable. Then the dtb pointer is calculated by adding the kernel pointer to the offset.
 
 Next, we run into a couple of sanity checks. First, they verify that the dtb pointer + the size of the dtb header is not larger than the end of the kernel, meaning we can't wrap the signed integer and set the dtb pointer somewhere over the kernel. Next the device tree header is copied to a buffer. 
 
