@@ -168,7 +168,6 @@ while (dtb + sizeof(struct fdt_header) < kernel_end) {
 if (fdt_check_header((const void *)&dtb_hdr != 0 ||
   (dtb + fdt_totalsize(const void *) &dtb_hdr) > kernel_end)
     break;
-dtb_size = fdt_totalsize(&dtb_hdr);
 ```
 
 1. dtb + dtb_header must be less than than kernel_end
