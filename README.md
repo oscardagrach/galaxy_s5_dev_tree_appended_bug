@@ -103,7 +103,7 @@ Now we know how to make the bootloader load an appended device tree, let's take 
 
 Almost immediately, the keen eye will notice a couple issues right off the bat.
 ```
-void * dev_tree_appended(void *kernel, uint32_t kernel_size, void *tags)
+void *dev_tree_appended(void *kernel, uint32_t kernel_size, void *tags)
 ```
 
 We see that both kernel and tags (where we load the device tree) are void, not unsigned. Both values point to their respective loading addresses from the boot image header. The first line of code in the function already presents us with part of our vulnerability:
