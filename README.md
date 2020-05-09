@@ -121,9 +121,9 @@ dtb = kernel + app_dtb_offset;
 
 Here the function calculates the kernel_end by adding the kernel ptr to the kernel_size find from the boot image header. The zImage header offset for zimage_end I talked about earlier is known as the "app_dtb_offset" according to LK, and we can see they copy the 4-byte length to that variable. Then the dtb pointer is calculated by adding the kernel pointer to the offset.
 
-Next, we run into a couple of sanity checks. First, they verify that the dtb pointer + the size of the dtb header is not larger than the end of the kernel, meaning we can't wrap the signed integer and set the dtb pointer somewhere over the kernel. Next the device tree header is copied to a buffer. 
+Next, we run into a couple of sanity checks. First, they verify that the dtb pointer + the size of the dtb header (0x28) is not larger than the end of the kernel, meaning we can't wrap the signed integer and set the dtb pointer somewhere over the kernel. Next the device tree header is copied to a buffer. 
 
-From there, the device tree header is checked that it is sane and valid (checking the FDT magic, len != 0, etc..) and that the dtb pointer + dtb_size from the dtb header is not larger than kernel_end again, making sure we don't wrap that integer and end up pointing somewhere over the kernel.
+From there, the device tree header is checked that it is sane and valid (checking the FDT magic, len != 0, etc..) and that the dtb pointer + totalsize (this is the one I told you to remember from earlier) from the dtb header is not larger than kernel_end again, making sure we don't wrap that integer and end up pointing somewhere over the kernel.
 
 ##### The vulnerability
 
@@ -139,7 +139,7 @@ Let's circle back to earlier, where we discussed Samsung's improved parsing of t
 ![dev_tree_appended](/images/checks.png)
 
 
-I couldn't fit as much disassembly in IDA as I could pseudocode for the GHIDRA decompiler into a screenshot, so I chose the latter for reference. Some checks are Samsung specific, and some are generic to LK.
+I couldn't fit as much disassembly in IDA as I could pseudocode from the GHIDRA decompiler into a screenshot, so I chose the latter for reference. Some checks are Samsung specific, and some are generic to LK.
 
 We can conclude the following conditions need to be met:
 1. None of the header addresses can overlap with LK area (0x0F800000 - 0x0FA00000)
@@ -148,6 +148,7 @@ We can conclude the following conditions need to be met:
 4. None of the header addresses + respective sizes can be greater than the scratch memory region
 5. Assertion on second_size (unused by Samsung) so we can't use any second_image (not used much anyways)
 6. tags_addr (dtb loading address) + total boot image length must not overlap LK area
+7. No integers overflowing because of the unsigned comparison (BLS)
 
 With that information, it's clear the only memory regions we have available for us available to load our ramdisk, kernel, and dtb, 0x0 - 0x0F800000 and 0x0FA00000 - 0x11000000.
 
@@ -172,11 +173,11 @@ dtb_size = fdt_totalsize(&dtb_hdr);
 
 1. dtb + dtb_header must be less than than kernel_end
 2. dtb has a valid header (FDT magic, etc...)
-3. dtb + dtb_size must be lower than kernel_end
+3. dtb + totalsize must be lower than kernel_end
 
 ##### How did you exploit this?
 
-Now that we know the conditions that need to be met, we can overflow the dtb pointer via app_dtb_offset (from the zImage header) and we can control dtb_size via the dtb length from the dtb header. Remember, even though we can overflow the dtb pointer, it still expects a valid dtb header at whatever location we point it to, and it still must be less than kernel_end. I'm sure there is more than one way to exploit this, but here's what I did...
+Now that we know the conditions that need to be met, we can overflow the dtb pointer via app_dtb_offset (from the zImage header) and we can control dtb_size via totalsize from the dtb header. Remember, even though we can overflow the dtb pointer, it still expects a valid dtb header at whatever location we point it to, and it still must be less than kernel_end. I'm sure there is more than one way to exploit this, but here's what I did...
 
 ##### Working backwards and doing maths
 First thing I realized was that I will need tags_addr as close as possible to 0x0F800000 without violating any of the sanity checks
@@ -187,7 +188,7 @@ With our memcpy destination set to 0x0E000000, we have to figure out the size of
 
 0x0F800000 - 0x0E000000 = 0x1800000
 
-We know we need a malicious dtb size in the dtb header that is at least 0x1800000 to hit 0x0F800000. All that's required from the kernel image is that we have our valid zImage header and appended dtb. Since we need a valid dtb header at the address I want dtb to point to, I can replace the ramdisk with a malicious dtb header that includes our required memcpy size. This means though that I will need to have my payload at ramdisk_addr + 0x1800000. The default address Samsung uses for ramdisk is 0x02000000, which works fine for this scenario.
+We know we need a malicious totalsize in the dtb header that is at least 0x1800000 to hit 0x0F800000. All that's required from the kernel image is that we have our valid zImage header and appended dtb. Since we need a valid dtb header at the address I want dtb to point to, I can replace the ramdisk with a malicious dtb header that includes our required memcpy size. This means though that I will need to have my payload at ramdisk_addr + 0x1800000. The default address Samsung uses for ramdisk is 0x02000000, which works fine for this scenario.
 
 0x02000000 + 0x1800000 = 0x3800000
 
@@ -225,7 +226,7 @@ struct boot_img_hdr
 ```
 Then we'd add our malicious zImage size to 0x2C into the zImage header, which will be 0xFE800030 as calculated later.
 
-Finally, we'll add our malicious device tree header length of 0x1800000 + payload to the header with an offset of 0x4 into it. What I did was create a fake boot image that's only 0x1800 bytes and simply appended a real boot image. From there, my shellcode will modify the partition table that LK loads into memory after reading the GPT, check if you are booting into recovery or boot, and add 0xC to the start sector of the respective partition. My shellcode overwrites the excetion vector table and hijacks the IRQ handler, and then executes boot_linux_from_mmc, which loads our boot image with the fixed partition table after restoring the original IRQ handler.
+Finally, we'll add our malicious dtb totalsize of 0x1800000 + payload to the header with an offset of 0x4 into it. What I did was create a fake boot image that's only 0x1800 bytes and simply appended a real boot image. From there, my shellcode will modify the partition table that LK loads into memory after reading the GPT, check if you are booting into recovery or boot, and add 0xC to the start sector of the respective partition. My shellcode overwrites the excetion vector table and hijacks the IRQ handler, and then executes boot_linux_from_mmc, which loads our boot image with the fixed partition table after restoring the original IRQ handler.
 
 My proof of concept for the G900V will be uploaded in the coming days.
 
