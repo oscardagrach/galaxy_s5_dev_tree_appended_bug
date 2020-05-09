@@ -114,8 +114,7 @@ void *kernel_end = kernel + kernel_size)
 uint32_t app_dtb_offset = 0;
 [...]
 
-app_dtb_offset = 0;
-memcpy(&app_dtb_offset, kernel + 0x2C), 4);
+memcpy((void *) &app_dtb_offset, (void *)kernel + 0x2C), sizeof(uint32_t));
 dtb = kernel + app_dtb_offset;
 ```
 
