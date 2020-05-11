@@ -245,6 +245,9 @@ Our zImage header length will be 0xFE800030.
 Here's what our memcpy looks like now:
 ```C
 memcpy(tags_addr, dtb, dtb_size)
+
+or for better visualization
+
 memcpy(0x0E000000, 0x02000000, 0x1800000 + payload)
 ```
 
