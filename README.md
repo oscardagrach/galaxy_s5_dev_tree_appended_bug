@@ -30,7 +30,7 @@ In order to accomodate all these different revisions, Samsung concatenates all t
 
 Each device tree has the following header:
 
-```
+```C
 struct fdt_header {
     uint32_t magic;
     uint32_t totalsize;
@@ -47,13 +47,13 @@ struct fdt_header {
 
 Take note of totalsize, we will be coming back later to discuss it further...
 
-```
+```C
 uint32_t totalsize;
 ```
 
 Let's take a quick look at the Android boot image header v1 (prior to Android 9):
 
-```
+```C
 struct boot_img_hdr
 {
     uint8_t magic[BOOT_MAGIC_SIZE];
@@ -78,7 +78,7 @@ struct boot_img_hdr
 ```
 
 Let's pay particular attention to these two values:
-```
+```C
 uint32_t tags_addr;    /* physical addr for kernel tags */
 uint32_t unused;
 ```
@@ -101,13 +101,13 @@ Now we know how to make the bootloader load an appended device tree, let's take 
 
 
 Almost immediately, the keen eye will notice a couple issues right off the bat.
-```
+```C
 void *dev_tree_appended(void *kernel, uint32_t kernel_size, void *tags)
 ```
 
 We see that both kernel and tags (where we load the device tree) are void, not unsigned. Both values point to their respective loading addresses from the boot image header. The first line of code in the function presents us with part of our vulnerability:
 
-```
+```C
 [...]
 void *kernel_end = kernel + kernel_size)
 uint32_t app_dtb_offset = 0;
@@ -127,7 +127,7 @@ From there, the device tree header is run through checks to ensure it is sane, v
 
 If the check is successful, the dtb_size is then stored from the header. Immediately after this, we can see our lovely little vulnerability...
 
-```
+```C
 memcpy(tags, dtb, dtb_size);
 ```
 
@@ -158,11 +158,11 @@ Remember the zImage header and the FDT (DTB) header, both of which contained the
 
 We can arbitrarily change both kernel_end and app_dtb_offset without any checks up until this point. Really there's only three checks we need to satisfy in order to reach that vulnerable memcpy:
 
-```
+```C
 while (dtb + sizeof(struct fdt_header) < kernel_end) {
 ```
 
-```
+```C
 if (fdt_check_header((const void *)&dtb_hdr != 0 ||
   (dtb + fdt_totalsize(const void *) &dtb_hdr) > kernel_end)
     break;
@@ -200,13 +200,13 @@ Now we need to overflow the dtb pointer to the ramdisk region where our maliciou
 Our zImage header length will be 0xFE800030.
 
 Here's what our memcpy looks like now:
-```
+```C
 memcpy(tags_addr, dtb, dtb_size)
 memcpy(0x0E000000, 0x02000000, 0x1800000 + payload)
 ```
 
 Let's look at what we need in our boot image header again (I removed irrelevant headers):
-```
+```C
 struct boot_img_hdr
 {
     uint8_t magic[BOOT_MAGIC_SIZE];
