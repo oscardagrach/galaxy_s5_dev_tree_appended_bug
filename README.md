@@ -92,9 +92,11 @@ For quick reference, this is what the zImage header looks like, and it starts at
 
 ```C
 struct zImage_hdr {
+	...
 	uint32_t  magic      /* Magic number: 0x016f2818 */
 	uint32_t  start      /* absolute load/run zImage address */
 	uint32_t  end        /* zImage end address *
+	...
 };
 ```
 
