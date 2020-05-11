@@ -88,7 +88,7 @@ The first member (tags_addr) is used to point where we want to load the device t
 ##### Enter appended DTB
 Many Android device OEMs opted to append the dtb to the end of the kernel (zImage) instead of pack it into its own image to simplify the requirements needed of the bootloader to load a device tree. The kernel and appended device tree are loaded together as a single blob. The bootloader will then parse an offset of 0x2C bytes into the zImage. Since it's a bit out of scope, 0x28 into the zImage is zimage_start and 0x2C is zimage_end, so zimage_end will have the size of the entire zImage. The bootloader will then take the value read from the zimage_end offset and add it to the kernel pointer, which theoretically would be where the device tree is appended.
 
-For quick reference, this is what the zImage header looks like, and it starts at 0x24. Most of the other header info is unused, deprecated, or irrelevant.
+For quick reference, this is what the zImage header looks like. Most of the other header info is unused, deprecated, or irrelevant. The information we care about starts here (magic is just there for reference):
 
 ```C
 struct zImage_hdr {
