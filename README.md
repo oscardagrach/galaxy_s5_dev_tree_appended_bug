@@ -142,7 +142,7 @@ I couldn't fit as much disassembly in IDA as I could pseudocode from the GHIDRA 
 We can conclude the following conditions need to be met:
 1. None of the header addresses can overlap with LK's region (0x0F800000 - 0x0FA00000)
 2. None of the header addresses + respective sizes (i.e, ramdisk + ramdisk_addr) can overlap LK's region
-3. None of the headder addresses can overlap OR be greater the scratch memory region (0x11000000), which is used to load boot image from eMMC
+3. None of the header addresses can overlap OR be greater the scratch memory region (0x11000000), which is used to load boot image from eMMC
 4. None of the header addresses + respective sizes can be greater than the scratch memory region
 5. Assertion on second_size is unused by Samsung so we can't use any second_image (Notably not used in most cases)
 6. tags_addr (dtb loading address) + total boot image length must not overlap LK region
