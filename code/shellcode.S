@@ -14,79 +14,80 @@ exception_vectors:
 _start:
 /* save context */
 	stmea	sp, {r4-r6}
-	mov		r4, sp
+	mov	r4, sp
 
 /* set developer_mode flag */
-	ldr		r5, developer_flag
-	mov		r6, #0x1
-	str		r6, [r5]
+	ldr	r5, developer_flag
+	mov	r6, #0x1
+	str	r6, [r5]
 
 /* fixup IRQ vector */
-	ldr		r5, irq_ptr
-	ldr		r6, irq_func
-	str		r6, [r5]
+	ldr	r5, irq_ptr
+	ldr	r6, irq_func
+	str	r6, [r5]
 
 /* patch warranty bit set */
-	ldr		r5, nop_ptr
-	ldr		r6, nop
-	str		r6, [r5]
+	ldr	r5, nop_ptr
+	ldr	r6, nop
+	str	r6, [r5]
 
 /* lcd_print hack */
-	ldr		r5, string_color_ptr
-	ldr		r6, string_color
-	str		r6, [r5]
+	ldr	r5, string_color_ptr
+	ldr	r6, string_color
+	str	r6, [r5]
 
 /* string hax */
-	ldr		r5, string_ptr
-	ldr		r6, string1
-	str		r6, [r5]
-	add		r5, #0x4
-	ldr		r6, string2
-	str		r6, [r5]
-	add		r5, #0x4
-	ldr		r6, string3
-	str		r6, [r5]
-	add		r5, #0x4
-	ldr		r6, string4
-	str		r6, [r5]
-	add		r5, #0x4
-	ldr		r6, string5
-	str		r6, [r5]
-	add		r5, #0x4
-	ldr		r6, string6
-	str		r6, [r5]
+	ldr	r5, string_ptr
+	ldr	r6, string1
+	str	r6, [r5]
+	add	r5, #0x4
+	ldr	r6, string2
+	str	r6, [r5]
+	add	r5, #0x4
+	ldr	r6, string3
+	str	r6, [r5]
+	add	r5, #0x4
+	ldr	r6, string4
+	str	r6, [r5]
+	add	r5, #0x4
+	ldr	r6, string5
+	str	r6, [r5]
+	add	r5, #0x4
+	ldr	r6, string6
+	str	r6, [r5]
 
 /* check recovery_flag, !=0 recovery, ==0 boot */
-	ldr		r5, recovery_flag
-	ldr		r5, [r5]
-	cmp		r5, #0
-	bne		recovery
+	ldr	r5, recovery_flag
+	ldr	r5, [r5]
+	cmp	r5, #0
+	bne	recovery
 
 boot:
 /* add 0xC to start sector (actual boot img offset into part) */
-	ldr		r5, boot_part_ptr
-	ldr		r6, [r5]
-	add		r6, #0xC
-	str		r6, [r5]
-	b		done
+	ldr	r5, boot_part_ptr
+	ldr	r6, [r5]
+	add	r6, #0xC
+	str	r6, [r5]
+	b	done
 
 recovery:
 /* add 0xC to start sector (actual recovery img offset into part) */
-	ldr		r5, recovery_part_ptr
-	ldr		r6, [r5]
-	add		r6, #0xC
-	str		r6, [r5]
+	ldr	r5, recovery_part_ptr
+	ldr	r6, [r5]
+	add	r6, #0xC
+	str	r6, [r5]
 
 done:
 /*	SVC mode, boot_linux_from_mmc, must use CPSR_c to leave condition flags alone */
-	mrs		r6, CPSR
-	orr		r5, r6, #3
-	msr		CPSR_c, r5
+	mrs	r6, CPSR
+	orr	r5, r6, #3
+	msr	CPSR_c, r5
 
 	ldmia	r4, {r4-r6}
-	b		0x0F821254
-	b		0x0F81833C
+	b	boot_linux_from_mmc
 
+boot_linux_from_mmc:
+	.word	0x0F821254
 recovery_part_ptr:
 	.word	0x0F946644
 boot_part_ptr:
