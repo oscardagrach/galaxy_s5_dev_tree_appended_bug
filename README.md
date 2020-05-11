@@ -238,6 +238,8 @@ Now we need to overflow the dtb pointer to the ramdisk region where our maliciou
 
 0x102000000 - 0x37FFFD0 = 0xFE800030
 
+![graph](/images/graph.png)
+
 Our zImage header length will be 0xFE800030.
 
 Here's what our memcpy looks like now:
