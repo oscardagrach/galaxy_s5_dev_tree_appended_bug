@@ -1,6 +1,8 @@
 .section ".text"
 .global _start
 
+/* thanks @frederic (https://fredericb.info/) */
+
 exception_vectors:
 	b	0x0F800020 /* reset */
 	b	0x0F8182C8 /* undefined */
