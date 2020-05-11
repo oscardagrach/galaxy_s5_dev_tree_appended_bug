@@ -96,7 +96,36 @@ Easy. If you recall from earlier, the unused member of the boot image header is 
 Now we know how to make the bootloader load an appended device tree, let's take a look at the beginning of the function that handles this:
 
 
-![dev_tree_appended](/images/dev_tree_appended.png)
+```C
+void *dev_tree_appended(void *kernel, uint32_t kernel_size, void *tags)
+{
+	void *kernel_end = kernel + kernel_size;
+	uint32_t app_dtb_offset = 0;
+	void *dtb;
+	void *bestmatch_tag = NULL;
+	uint32_t bestmatch_tag_size;
+	uint32_t bestmatch_soc_rev_id = INVALID_SOC_REV_ID;
+
+	memcpy((void*) &app_dtb_offset, (void*) (kernel + DTB_OFFSET), sizeof(uint32_t));
+
+	dtb = kernel + app_dtb_offset;
+	while (dtb + sizeof(struct fdt_header) < kernel_end) {
+		uint32_t dtb_soc_rev_id;
+		struct fdt_header dtb_hdr;
+		uint32_t dtb_size;
+
+		/* the DTB could be unaligned, so extract the header,
+		 * and operate on it separately */
+		memcpy(&dtb_hdr, dtb, sizeof(struct fdt_header));
+		if (fdt_check_header((const void *)&dtb_hdr) != 0 ||
+		    (dtb + fdt_totalsize((const void *)&dtb_hdr) > kernel_end))
+			break;
+		dtb_size = fdt_totalsize(&dtb_hdr);
+
+		/* now that we know we have a valid DTB, we need to copy
+		 * it somewhere aligned, like tags */
+		memcpy(tags, dtb, dtb_size);
+```
 
 
 
