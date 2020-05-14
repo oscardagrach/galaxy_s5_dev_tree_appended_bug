@@ -8,7 +8,7 @@ This is a bug I exploited in the Galaxy S5's bootloader to achieve arbitrary cod
 This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1 firmware (Marshmallow, 6.0.1), which appears to be the more recent affected firmware.
 
 ### Summary:
-Rewind the clock 7 years to the glory days of the XDA forums. The Galaxy S4 is released, with some variants bootloader locked, and the now famous exploit coined Loki is released by researcher Dan Rosenberg (djrbliss). This bypass effectively allowed the booting of unsigned boot and recovery images. 
+Rewind the clock 7 years to the glory days of the XDA forums. The Galaxy S4 is released, with some variants bootloader locked, and the now famous exploit coined Loki is released by researcher Dan Rosenberg (djrbliss). This exploit effectively allowed the booting of unsigned boot and recovery images. 
 
 ##### How did he do it? 
 During Dan's research, he discovered that the applications-bootloader doesn't apply any sanity checks to the boot image header, meaning you could pack up a proper Android boot image, or in our case, some shellcode, and load it to any arbitrary address in non-secure world memory. In this case, this was used to load shellcode over the applications-bootloader currently  being executed in memory. Not too long after its release, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
