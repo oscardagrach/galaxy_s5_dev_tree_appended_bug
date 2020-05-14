@@ -5,7 +5,7 @@
 This is a bug I exploited in the Galaxy S5's bootloader to achieve arbitrary code execution at the application-bootloader level, which in this case is based on Little Kernel (LK). The vulnerability is in the dev_tree_appended function, which parses a Linux device tree blob that was appended to a zImage, as opposed to being packed as a separate image as this device's stock firmware does.
 
 ### Scope:
-This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1  formware (Marshmallow, 6.0.1), which appears to be the more recent affected firmware.
+This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1 firmware (Marshmallow, 6.0.1), which appears to be the more recent affected firmware.
 
 ### Summary:
 Rewind the clock 7 years to the glory days of the XDA forums. The Galaxy S4 is released, with some variants bootloader locked, and the now famous exploit coined Loki is released by researcher Dan Rosenberg (djrbliss). This bypass effectively allowed the booting of unsigned boot and recovery images. 
