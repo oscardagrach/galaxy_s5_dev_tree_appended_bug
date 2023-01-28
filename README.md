@@ -2,16 +2,15 @@
 
 ## Vulnerability in the Samsung Galaxy S5 Bootloader
 
-This is a bug I exploited in the Galaxy S5's bootloader to achieve arbitrary code execution at the application-bootloader level, which in this case is based on Little Kernel (LK). The vulnerability is in the dev_tree_appended function, which parses a Linux device tree blob that was appended to a zImage, as opposed to being packed as a separate image as this device's stock firmware does.
+This is a bug I exploited in the Galaxy S5's bootloader to achieve arbitrary code execution at the Android Bootloader (ABOOT) stage, which in this case is based on Little Kernel (LK). The vulnerability is in the dev_tree_appended function, which parses a Linux device tree blob that was appended to a zImage, as opposed to being packed as a separate image as this device's stock firmware does.
 
 ### Scope:
-This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1 firmware (Marshmallow, 6.0.1), which appears to be the more recent affected firmware.
-
+This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1 firmware (Marshmallow, 6.0.1), which is the most recent affected firmware.
 ### Summary:
-Rewind the clock 7 years to the glory days of the XDA forums. The Galaxy S4 is released, with some variants bootloader locked, and the now famous exploit coined Loki is released by researcher Dan Rosenberg (djrbliss). This exploit effectively allowed the booting of unsigned boot and recovery images. 
+This bug was inspired by researcher Dan Rosenberg's (djrbliss) research on the Galaxy S4 bootloader, and discovering vulnerabilities in the parsing of Android boot image header fields. This exploit allowed booting of unsigned boot and recovery images by overwriting bootloader memory with a malicious ramdisk.
 
 ##### How did he do it? 
-During Dan's research, he discovered that the applications-bootloader doesn't apply any sanity checks to the boot image header, meaning you could pack up a proper Android boot image, or in our case, some shellcode, and load it to any arbitrary address in non-secure world memory. In this case, this was used to load shellcode over the applications-bootloader currently  being executed in memory. Not too long after its release, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
+During Dan's research, he discovered the Android Bootloader doesn't apply sanity checks to the boot image header, meaning you could pack up a proper Android boot image, or in our case, some shellcode, and load it to any arbitrary address in non-secure world memory. It was used to load shellcode over the Android Bootloader in memory. Not too long after its release, the vulnerability was patched, and Samsung placed much more focus on ensuring sane and safe parsing of boot image headers. 
 
 ##### Then what?
 This resulted in several checks added to ensure that the kernel, ramdisk, and device tree don't overlap LK memory or anywhere else that would be problematic, like the scratch memory where the bootloader loads the boot image from eMMC.
@@ -19,10 +18,10 @@ This resulted in several checks added to ensure that the kernel, ramdisk, and de
 ##### What is a device tree?
 Starting with the Galaxy S5, Samsung started using Linux kernel device trees, as many vendors opted to do in the Qualcomm msm8974 era.
 
-It's essentially a small 'map, better known as a data structure, which the Linux kernel uses to determine what hardware is on-board, how it needs to be configured, etc. In Linux drivers that support device trees there is a phase coined "Probe", in which they search for a 'compatible node' in the device tree. This is in essence, a flag saying "Hey, please load the relevant driver for this hardware". Modern bootloaders often pass dynamic parameters to the device trees during boot, such as a reserved memory region like a framebuffer that the bootloader has already allocated. This was intended to help simplify bringing-up support for ARM, among other devices, and move away from the awful board files we were widely used in 3.10 kernels for ARM devices.
+It's essentially a small 'map, better known as a data structure, which the Linux kernel uses to determine what hardware is present on the platform, how it needs to be configured, etc. During driver probe in Linux, developers can use the device tree to match specific hardware and functionality. Modern bootloaders often pass dynamic parameters to the device trees during boot, such as a reserved memory region like a framebuffer the bootloader has already allocated. This was intended to help simplify bring-up for ARM, among other devices, and move away from the awful board files we were widely used in 3.10 kernels for ARM devices.
 
 ##### How does Samsung load their device trees?
-There's a couple different methods to load a device tree. One such method used by Samsung and several other OEMs is to pack the device tree blob into the boot image. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc.
+There's a two different methods to load a device tree. One such method used by Samsung and several other OEMs is to pack the device tree blob into the boot image with its own physical address and length fields. While it might be unknown to the public, often there are several hardware revisions of products, and in between these hardware revisions there may be different peripherals, minor design changes/fixes, etc.
 
 In order to accomodate all these different revisions, Samsung concatenates all these different hardware revision's device trees into one blob so the kernel can then choose the best match for the hardware its booting on. 
 
@@ -270,5 +269,3 @@ struct boot_img_hdr
 Then we'd add our malicious zImage size to 0x2C into the zImage header, which will be 0xFE800030 as calculated later.
 
 Finally, we'll add our malicious dtb totalsize of 0x1800000 + payload to the header with an offset of 0x4 into it. I created a fake boot image that's only 0x1800 bytes and simply appended a real boot image. From there, my shellcode will modify the partition table that LK loads into memory after reading the GPT, check if you are booting into recovery or boot, and add 0xC to the start sector of the respective partition. My shellcode overwrites the excetion vector table and hijacks the IRQ handler, and then executes boot_linux_from_mmc, which loads our boot image with the fixed partition table after restoring the original IRQ handler.
-
-A proof of concept for the G900V (on the afformentioned firmware *only*) will be uploaded in the coming days.
