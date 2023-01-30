@@ -86,7 +86,7 @@ done:
 	msr	CPSR_c, r5
 
 	ldmia	r4, {r4-r6}
-	b	boot_linux_from_mmc
+	b	0x0F821254
 
 boot_linux_from_mmc:
 	.word	0x0F821254
