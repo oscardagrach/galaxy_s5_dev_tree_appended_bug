@@ -5,7 +5,7 @@
 This is a bug I exploited in the Galaxy S5's bootloader to achieve arbitrary code execution at the Android Bootloader (ABOOT) stage, which in this case is based on Little Kernel (LK). The vulnerability is in the dev_tree_appended function, which parses a Linux device tree blob that was appended to a zImage, as opposed to being packed as a separate image as this device's stock firmware does.
 
 ### Scope:
-This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRS2DQD1 firmware (Marshmallow, 6.0.1), which is the most recent affected firmware.
+This vulnerability affects all Galaxy S5 variants, including Galaxy S5 Active variants, and possibly some early builds for the Galaxy Note 3 and 4. The bug has since been patched by both CodeAurora and Samsung. The device I exploited this on was the Verizon Galaxy S5 (G900V) on the G900VVRU2DPD1 firmware (Marshmallow, 6.0.1), which is the most recent affected firmware.
 ### Summary:
 This bug was inspired by researcher Dan Rosenberg's (djrbliss) research on the Galaxy S4 bootloader, and discovering vulnerabilities in the parsing of Android boot image header fields. This exploit allowed booting of unsigned boot and recovery images by overwriting bootloader memory with a malicious ramdisk.
 
